@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { Button } from '@/app/ui/button';
 import { updateInvoice, State } from '@/app/lib/actions';
 import { useActionState } from 'react';
+import { useSession } from 'next-auth/react';
 
 export default function EditInvoiceForm({
   invoice,
@@ -20,7 +21,8 @@ export default function EditInvoiceForm({
   customers: CustomerField[];
 }) {
   const initialState: State = { message: null, errors: {} };
-  const updateInvoiceWithId = updateInvoice.bind(null, invoice.id);
+  const { data: session } = useSession()
+  const updateInvoiceWithId = updateInvoice.bind(null, { id: invoice.id, userEmail: session?.user?.email || '' });
   const [state, formAction] = useActionState(updateInvoiceWithId, initialState);
 
   return (

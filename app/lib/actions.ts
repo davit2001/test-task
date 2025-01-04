@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
+import { headers } from 'next/headers';
 
 const FormSchema = z.object({
   id: z.string(),
@@ -73,7 +74,10 @@ export async function createInvoice(prevState: State, formData: FormData) {
 }
 
 export async function updateInvoice(
-  id: string,
+  data: {
+    id: string;
+    userEmail: string;
+  },
   prevState: State,
   formData: FormData,
 ) {
@@ -82,6 +86,7 @@ export async function updateInvoice(
     amount: formData.get('amount'),
     status: formData.get('status'),
   });
+  console.log('data', data);
 
   if (!validatedFields.success) {
     return {
@@ -97,9 +102,14 @@ export async function updateInvoice(
     await sql`
       UPDATE invoices
       SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
-      WHERE id = ${id}
+      WHERE id = ${data.id}
+    `;
+    await sql`
+      INSERT INTO invoices_logs (invoice_id, user_email, status)
+      VALUES (${data?.id}, ${data?.userEmail}, ${status})
     `;
   } catch (error) {
+    console.log('error log', error)
     return { message: 'Database Error: Failed to Update Invoice.' };
   }
 
@@ -112,11 +122,27 @@ export async function deleteInvoice(id: string) {
   revalidatePath('/dashboard/invoices');
 }
 
+export async function getInvoiceLogs(invoiceId: string) {
+  try {
+    const logs = await sql`
+      SELECT user_email, status, changed_at
+      FROM invoice_logs
+      WHERE invoice_id = ${invoiceId}
+      ORDER BY changed_at DESC
+    `;
+    return logs.rows;
+  } catch (error) {
+    console.error('Failed to fetch logs:', error);
+    return [];
+  }
+}
+
 export async function authenticate(
   prevState: string | undefined,
   formData: FormData,
 ) {
   try {
+    await headers();
     await signIn('credentials', formData);
   } catch (error) {
     if (error instanceof AuthError) {
