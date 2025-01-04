@@ -2,7 +2,6 @@ import '@/app/ui/global.css';
 import { inter } from '@/app/ui/fonts';
 import { Metadata } from 'next';
 import { SessionProvider } from 'next-auth/react';
-import type { Session } from '@auth/core/types';
 
 export const metadata: Metadata = {
   title: {
@@ -17,7 +16,7 @@ export default function RootLayout({
   params: { session }
 }: {
   children: React.ReactNode;
-  params: { session: Session | null };
+  params: any;
 }) {
   return (
     <html lang="en">
